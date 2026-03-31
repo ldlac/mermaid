@@ -15,6 +15,7 @@ const errorDisplay = document.getElementById("error-display");
 const diagramTypeBadge = document.getElementById("diagram-type");
 const exportPngBtn = document.getElementById("export-png");
 const exportSvgBtn = document.getElementById("export-svg");
+const copyPngBtn = document.getElementById("copy-png");
 const formatBtn = document.getElementById("format-btn");
 const newDiagramBtn = document.getElementById("new-diagram");
 const saveDiagramBtn = document.getElementById("save-diagram");
@@ -146,7 +147,7 @@ function renderDiagramList() {
         </svg>
       </button>
     </div>
-  `
+  `,
     )
     .join("");
 
@@ -299,6 +300,78 @@ async function exportAsSvg() {
   URL.revokeObjectURL(url);
 }
 
+async function copyAsPng() {
+  const svgElement = output.querySelector("svg");
+  if (!svgElement) {
+    alert("No diagram to copy");
+    return;
+  }
+
+  let width = svgElement.getAttribute("width");
+  let height = svgElement.getAttribute("height");
+
+  if (!width || !height || width === "0" || height === "0") {
+    const viewBox = svgElement.getAttribute("viewBox");
+    if (viewBox) {
+      const parts = viewBox.split(/[\s,]+/).filter(Boolean);
+      if (parts.length === 4) {
+        width = parts[2];
+        height = parts[3];
+      }
+    }
+  }
+
+  if (!width || width === "0") width = "800";
+  if (!height || height === "0") height = "600";
+
+  const svgClone = svgElement.cloneNode(true);
+  svgClone.setAttribute("width", width);
+  svgClone.setAttribute("height", height);
+  svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const serializer = new XMLSerializer();
+  const svgData = serializer.serializeToString(svgClone);
+  const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  img.onload = async () => {
+    const canvas = document.createElement("canvas");
+    const scale = 2;
+    const w = parseFloat(width) || img.width;
+    const h = parseFloat(height) || img.height;
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#0f0f0f";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+
+    canvas.toBlob(async (blob) => {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        const originalText = copyPngBtn.innerHTML;
+        copyPngBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        setTimeout(() => {
+          copyPngBtn.innerHTML = originalText;
+        }, 2000);
+      } catch (err) {
+        alert("Failed to copy to clipboard");
+      }
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+  img.onerror = () => {
+    alert("Failed to load SVG for copy");
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
 function updateTransform() {
   output.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
   output.style.transformOrigin = "center center";
@@ -421,6 +494,7 @@ function init() {
 editor.addEventListener("input", debounceRender);
 exportPngBtn.addEventListener("click", exportAsPng);
 exportSvgBtn.addEventListener("click", exportAsSvg);
+copyPngBtn.addEventListener("click", copyAsPng);
 newDiagramBtn.addEventListener("click", createNewDiagram);
 saveDiagramBtn.addEventListener("click", () => {
   saveCurrentDiagram();
