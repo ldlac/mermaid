@@ -9,7 +9,7 @@ const DEFAULT_DIAGRAM = `flowchart TD
     B -->|No| D[End]
     C --> D`;
 
-const editor = document.getElementById("code-editor");
+const textarea = document.getElementById("code-editor");
 const output = document.getElementById("diagram-output");
 const errorDisplay = document.getElementById("error-display");
 const diagramTypeBadge = document.getElementById("diagram-type");
@@ -36,6 +36,25 @@ let panY = 0;
 let isDragging = false;
 let startX = 0;
 let startY = 0;
+
+const cm = CodeMirror.fromTextArea(textarea, {
+  mode: "javascript",
+  theme: "material-darker",
+  lineNumbers: true,
+  matchBrackets: true,
+  autoCloseBrackets: true,
+  indentUnit: 2,
+  tabSize: 2,
+  lineWrapping: true,
+});
+
+function getCode() {
+  return cm.getValue();
+}
+
+function setCode(code) {
+  cm.setValue(code);
+}
 
 mermaid.initialize({
   startOnLoad: false,
@@ -90,7 +109,7 @@ function saveCurrentDiagram() {
 
   const name = diagramNameInput.value.trim() || "Untitled";
   diagrams[id].name = name;
-  diagrams[id].code = editor.value;
+  diagrams[id].code = getCode();
 
   saveDiagrams(diagrams);
   renderDiagramList();
@@ -104,7 +123,7 @@ function loadDiagram(id) {
 
   currentDiagramId = id;
   setActiveId(id);
-  editor.value = diagram.code || "";
+  setCode(diagram.code || "");
   diagramNameInput.value = diagram.name || "Untitled";
   renderDiagramList();
   renderDiagram();
@@ -181,7 +200,7 @@ function detectDiagramType(code) {
 }
 
 async function renderDiagram() {
-  const code = editor.value.trim();
+  const code = getCode().trim();
 
   if (!code) {
     output.innerHTML =
@@ -439,7 +458,7 @@ function decodeFromUrl(encoded) {
 }
 
 function generateShareLink() {
-  const code = editor.value.trim();
+  const code = getCode().trim();
   if (!code) {
     alert("No diagram to share");
     return;
@@ -461,7 +480,7 @@ function loadFromUrl() {
   if (encoded) {
     const code = decodeFromUrl(encoded);
     if (code) {
-      editor.value = code;
+      setCode(code);
       renderDiagram();
       window.history.replaceState({}, "", window.location.pathname);
       return true;
@@ -491,7 +510,7 @@ function init() {
   renderDiagramList();
 }
 
-editor.addEventListener("input", debounceRender);
+cm.on("change", debounceRender);
 exportPngBtn.addEventListener("click", exportAsPng);
 exportSvgBtn.addEventListener("click", exportAsSvg);
 copyPngBtn.addEventListener("click", copyAsPng);
