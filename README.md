@@ -6,6 +6,7 @@ A real-time mermaid diagram editor with live preview and export.
 
 - **Live Preview** — See your diagram update as you type
 - **Diagram Types** — Supports flowchart, sequence, class, state, ER, gantt, pie, mindmap, timeline, and more
+- **Local Storage** — Save multiple diagrams, auto-saves on edit
 - **Export** — Download as PNG or SVG
 - **Dark Theme** — Built-in dark mode
 

@@ -1,5 +1,8 @@
 import mermaid from "mermaid";
 
+const STORAGE_KEY = "mermaid-diagrams";
+const ACTIVE_KEY = "mermaid-active-id";
+
 const DEFAULT_DIAGRAM = `flowchart TD
     A[Start] --> B{Is it?}
     B -->|Yes| C[OK]
@@ -13,9 +16,13 @@ const diagramTypeBadge = document.getElementById("diagram-type");
 const exportPngBtn = document.getElementById("export-png");
 const exportSvgBtn = document.getElementById("export-svg");
 const formatBtn = document.getElementById("format-btn");
+const newDiagramBtn = document.getElementById("new-diagram");
+const saveDiagramBtn = document.getElementById("save-diagram");
+const diagramNameInput = document.getElementById("diagram-name");
+const diagramList = document.getElementById("diagram-list");
 
 let renderTimeout = null;
-let currentDiagramId = "diagram-" + Date.now();
+let currentDiagramId = null;
 
 mermaid.initialize({
   startOnLoad: false,
@@ -29,6 +36,120 @@ mermaid.initialize({
     useMaxWidth: true,
   },
 });
+
+function getDiagrams() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveDiagrams(diagrams) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(diagrams));
+}
+
+function getActiveId() {
+  return localStorage.getItem(ACTIVE_KEY);
+}
+
+function setActiveId(id) {
+  localStorage.setItem(ACTIVE_KEY, id);
+}
+
+function createNewDiagram() {
+  const diagrams = getDiagrams();
+  const id = "diagram-" + Date.now();
+  const name = "Untitled";
+
+  diagrams[id] = { name, code: DEFAULT_DIAGRAM };
+  saveDiagrams(diagrams);
+  setActiveId(id);
+  loadDiagram(id);
+  renderDiagramList();
+}
+
+function saveCurrentDiagram() {
+  const diagrams = getDiagrams();
+  const id = currentDiagramId;
+
+  if (!id || !diagrams[id]) return;
+
+  const name = diagramNameInput.value.trim() || "Untitled";
+  diagrams[id].name = name;
+  diagrams[id].code = editor.value;
+
+  saveDiagrams(diagrams);
+  renderDiagramList();
+}
+
+function loadDiagram(id) {
+  const diagrams = getDiagrams();
+  const diagram = diagrams[id];
+
+  if (!diagram) return;
+
+  currentDiagramId = id;
+  setActiveId(id);
+  editor.value = diagram.code || "";
+  diagramNameInput.value = diagram.name || "Untitled";
+  renderDiagramList();
+  renderDiagram();
+}
+
+function deleteDiagram(e, id) {
+  e.stopPropagation();
+  const diagrams = getDiagrams();
+
+  if (!diagrams[id]) return;
+
+  delete diagrams[id];
+  saveDiagrams(diagrams);
+
+  if (currentDiagramId === id) {
+    const remainingIds = Object.keys(diagrams);
+    if (remainingIds.length > 0) {
+      loadDiagram(remainingIds[0]);
+    } else {
+      createNewDiagram();
+    }
+  }
+
+  renderDiagramList();
+}
+
+function renderDiagramList() {
+  const diagrams = getDiagrams();
+  const ids = Object.keys(diagrams);
+
+  diagramList.innerHTML = ids
+    .map(
+      (id) => `
+    <div class="diagram-item ${id === currentDiagramId ? "active" : ""}" data-id="${id}">
+      <span class="diagram-item-name">${diagrams[id].name || "Untitled"}</span>
+      <button class="diagram-item-delete" data-id="${id}" title="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  `
+    )
+    .join("");
+
+  diagramList.querySelectorAll(".diagram-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      if (!e.target.closest(".diagram-item-delete")) {
+        loadDiagram(item.dataset.id);
+      }
+    });
+  });
+
+  diagramList.querySelectorAll(".diagram-item-delete").forEach((btn) => {
+    btn.addEventListener("click", (e) => deleteDiagram(e, btn.dataset.id));
+  });
+}
 
 function detectDiagramType(code) {
   const trimmed = code.trim().toLowerCase();
@@ -60,10 +181,10 @@ async function renderDiagram() {
   const type = detectDiagramType(code);
   diagramTypeBadge.textContent = type;
 
-  currentDiagramId = "diagram-" + Date.now();
+  const id = "diagram-" + Date.now();
 
   try {
-    const { svg } = await mermaid.render(currentDiagramId, code);
+    const { svg } = await mermaid.render(id, code);
     output.innerHTML = svg;
     errorDisplay.classList.add("hidden");
   } catch (err) {
@@ -77,7 +198,10 @@ async function renderDiagram() {
 
 function debounceRender() {
   if (renderTimeout) clearTimeout(renderTimeout);
-  renderTimeout = setTimeout(renderDiagram, 300);
+  renderTimeout = setTimeout(() => {
+    renderDiagram();
+    saveCurrentDiagram();
+  }, 500);
 }
 
 async function exportAsPng() {
@@ -163,9 +287,30 @@ async function exportAsSvg() {
   URL.revokeObjectURL(url);
 }
 
-editor.value = DEFAULT_DIAGRAM;
-renderDiagram();
+function init() {
+  const diagrams = getDiagrams();
+  const activeId = getActiveId();
+
+  if (Object.keys(diagrams).length === 0) {
+    createNewDiagram();
+  } else if (activeId && diagrams[activeId]) {
+    loadDiagram(activeId);
+  } else {
+    const firstId = Object.keys(diagrams)[0];
+    loadDiagram(firstId);
+  }
+
+  renderDiagramList();
+}
 
 editor.addEventListener("input", debounceRender);
 exportPngBtn.addEventListener("click", exportAsPng);
 exportSvgBtn.addEventListener("click", exportAsSvg);
+newDiagramBtn.addEventListener("click", createNewDiagram);
+saveDiagramBtn.addEventListener("click", () => {
+  saveCurrentDiagram();
+  renderDiagram();
+});
+diagramNameInput.addEventListener("input", debounceRender);
+
+init();
