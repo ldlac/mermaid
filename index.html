@@ -110,7 +110,13 @@
       <section class="preview-pane">
         <div class="pane-header">
           <span>Preview</span>
-          <span id="diagram-type" class="badge">-</span>
+          <div class="zoom-controls">
+            <span id="diagram-type" class="badge">-</span>
+            <span id="zoom-level" class="zoom-level">100%</span>
+            <button id="zoom-out" class="btn-small" title="Zoom out">−</button>
+            <button id="zoom-in" class="btn-small" title="Zoom in">+</button>
+            <button id="zoom-reset" class="btn-small" title="Reset zoom">⟲</button>
+          </div>
         </div>
         <div class="preview-container">
           <div id="diagram-output"></div>

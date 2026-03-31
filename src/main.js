@@ -21,9 +21,20 @@ const saveDiagramBtn = document.getElementById("save-diagram");
 const shareLinkBtn = document.getElementById("share-link");
 const diagramNameInput = document.getElementById("diagram-name");
 const diagramList = document.getElementById("diagram-list");
+const zoomInBtn = document.getElementById("zoom-in");
+const zoomOutBtn = document.getElementById("zoom-out");
+const zoomResetBtn = document.getElementById("zoom-reset");
+const zoomLevelDisplay = document.getElementById("zoom-level");
+const previewContainer = document.querySelector(".preview-container");
 
 let renderTimeout = null;
 let currentDiagramId = null;
+let scale = 1;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
 
 mermaid.initialize({
   startOnLoad: false,
@@ -288,6 +299,60 @@ async function exportAsSvg() {
   URL.revokeObjectURL(url);
 }
 
+function updateTransform() {
+  output.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  output.style.transformOrigin = "center center";
+  zoomLevelDisplay.textContent = `${Math.round(scale * 100)}%`;
+}
+
+function zoomIn() {
+  scale = Math.min(scale + 0.25, 3);
+  updateTransform();
+}
+
+function zoomOut() {
+  scale = Math.max(scale - 0.25, 0.25);
+  updateTransform();
+}
+
+function zoomReset() {
+  scale = 1;
+  panX = 0;
+  panY = 0;
+  updateTransform();
+}
+
+function handleWheel(e) {
+  e.preventDefault();
+  if (e.deltaY < 0) {
+    zoomIn();
+  } else {
+    zoomOut();
+  }
+}
+
+function handleMouseDown(e) {
+  if (e.target.closest("#diagram-output")) {
+    isDragging = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+    previewContainer.style.cursor = "grabbing";
+  }
+}
+
+function handleMouseMove(e) {
+  if (isDragging) {
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    updateTransform();
+  }
+}
+
+function handleMouseUp() {
+  isDragging = false;
+  previewContainer.style.cursor = "grab";
+}
+
 function encodeToUrl(code) {
   return btoa(encodeURIComponent(code));
 }
@@ -363,5 +428,13 @@ saveDiagramBtn.addEventListener("click", () => {
 });
 diagramNameInput.addEventListener("input", debounceRender);
 shareLinkBtn.addEventListener("click", generateShareLink);
+zoomInBtn.addEventListener("click", zoomIn);
+zoomOutBtn.addEventListener("click", zoomOut);
+zoomResetBtn.addEventListener("click", zoomReset);
+previewContainer.addEventListener("wheel", handleWheel, { passive: false });
+previewContainer.addEventListener("mousedown", handleMouseDown);
+previewContainer.addEventListener("mousemove", handleMouseMove);
+previewContainer.addEventListener("mouseup", handleMouseUp);
+previewContainer.addEventListener("mouseleave", handleMouseUp);
 
 init();

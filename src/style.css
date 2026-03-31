@@ -248,6 +248,19 @@ body {
   text-transform: uppercase;
 }
 
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.zoom-level {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: center;
+}
+
 .editor-container {
   flex: 1;
   overflow: hidden;
@@ -291,19 +304,21 @@ body {
 
 .preview-container {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   padding: 1.5rem;
   background: var(--bg-primary);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
+  cursor: grab;
 }
 
 #diagram-output {
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  transition: transform 0.1s ease-out;
 }
 
 #diagram-output svg {
