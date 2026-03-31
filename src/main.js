@@ -18,6 +18,7 @@ const exportSvgBtn = document.getElementById("export-svg");
 const formatBtn = document.getElementById("format-btn");
 const newDiagramBtn = document.getElementById("new-diagram");
 const saveDiagramBtn = document.getElementById("save-diagram");
+const shareLinkBtn = document.getElementById("share-link");
 const diagramNameInput = document.getElementById("diagram-name");
 const diagramList = document.getElementById("diagram-list");
 
@@ -287,7 +288,56 @@ async function exportAsSvg() {
   URL.revokeObjectURL(url);
 }
 
+function encodeToUrl(code) {
+  return btoa(encodeURIComponent(code));
+}
+
+function decodeFromUrl(encoded) {
+  try {
+    return decodeURIComponent(atob(encoded));
+  } catch {
+    return null;
+  }
+}
+
+function generateShareLink() {
+  const code = editor.value.trim();
+  if (!code) {
+    alert("No diagram to share");
+    return;
+  }
+  const encoded = encodeToUrl(code);
+  const url = `${window.location.origin}${window.location.pathname}?d=${encoded}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const originalText = shareLinkBtn.innerHTML;
+    shareLinkBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      shareLinkBtn.innerHTML = originalText;
+    }, 2000);
+  });
+}
+
+function loadFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get("d");
+  if (encoded) {
+    const code = decodeFromUrl(encoded);
+    if (code) {
+      editor.value = code;
+      renderDiagram();
+      window.history.replaceState({}, "", window.location.pathname);
+      return true;
+    }
+  }
+  return false;
+}
+
 function init() {
+  if (loadFromUrl()) {
+    renderDiagramList();
+    return;
+  }
+
   const diagrams = getDiagrams();
   const activeId = getActiveId();
 
@@ -312,5 +362,6 @@ saveDiagramBtn.addEventListener("click", () => {
   renderDiagram();
 });
 diagramNameInput.addEventListener("input", debounceRender);
+shareLinkBtn.addEventListener("click", generateShareLink);
 
 init();
