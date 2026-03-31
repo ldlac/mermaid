@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Live Editor</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="header">
+      <div class="logo">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
+        </svg>
+        <span>Mermaid Editor</span>
+      </div>
+      <div class="actions">
+        <button id="export-png" class="btn" title="Export as PNG">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          PNG
+        </button>
+        <button id="export-svg" class="btn" title="Export as SVG">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          SVG
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="editor-pane">
+        <div class="pane-header">
+          <span>Code</span>
+          <span id="" class="badge">code</span>
+        </div>
+        <div class="editor-container">
+          <textarea
+            id="code-editor"
+            spellcheck="false"
+            placeholder="Enter your mermaid diagram code here..."
+          ></textarea>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <section class="preview-pane">
+        <div class="pane-header">
+          <span>Preview</span>
+          <span id="diagram-type" class="badge">-</span>
+        </div>
+        <div class="preview-container">
+          <div id="diagram-output"></div>
+          <div id="error-display" class="error hidden"></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
